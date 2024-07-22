@@ -63,3 +63,10 @@ insert into Categories values('Fiction'),
 ('Poetry'),('Drama'),('Horror'),('Science'),('Technology'),('Business');
 select * from Categories;
 select * from Books;
+select * from Authors;
+select * from BookAuthors;
+select * from Fines;
+select * from Members;
+select * from Reservations;
+select * from Members;
+

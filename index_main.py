@@ -78,7 +78,7 @@ def add_book_gui():
     add_window = Toplevel(root)
     add_window.title("Add Book")
 
-    Label(add_window, text="Title").grid(row=0)
+    Label(add_window, text="Title", fg="white", bg="black").grid(row=0)
     Label(add_window, text="ISBN").grid(row=1)
     Label(add_window, text="Publisher").grid(row=2)
     Label(add_window, text="Publication Year").grid(row=3)
@@ -167,9 +167,12 @@ root.title("Library Management System")
 root.columnconfigure(1, weight=1)
 root.rowconfigure(3, weight=1)
 
-Button(root, text='Add Book', command=add_book_gui).grid(row=0, column=0, sticky=W, pady=4)
-Button(root, text='Update Book', command=update_book_gui).grid(row=1, column=0, sticky=W, pady=4)
-Button(root, text='Delete Book', command=delete_book_gui).grid(row=2, column=0, sticky=W, pady=4)
+Button(root, text='Add Book', fg='white', bg='black', width='10', command=add_book_gui).grid(row=0, column=0, sticky=W, pady=4)
+Button(root, text='Update Book', fg='white', bg='black', width='10', command=update_book_gui).grid(row=1, column=0, sticky=W, pady=4)
+Button(root, text='Delete Book', fg='white', bg='black', width='10', command=delete_book_gui).grid(row=2, column=0, sticky=W, pady=4)
+
+style = ttk.Style()
+style.configure("Treeview.Heading", foreground="black")
 
 tree = ttk.Treeview(root, columns=('BookID', 'Title', 'ISBN', 'Publisher', 'PublicationYear', 'CategoryID', 'Quantity'), show='headings')
 tree.heading('BookID', text='BookID')
@@ -179,7 +182,18 @@ tree.heading('Publisher', text='Publisher')
 tree.heading('PublicationYear', text='PublicationYear')
 tree.heading('CategoryID', text='CategoryID')
 tree.heading('Quantity', text='Quantity')
+
+tree.column('BookID', width=100)
+tree.column('Title', width=200)
+tree.column('ISBN', width=150)
+tree.column('Publisher', width=150)
+tree.column('PublicationYear', width=100)
+tree.column('CategoryID', width=100)
+tree.column('Quantity', width=80)
+
 tree.grid(row=0, column=1, rowspan=3, sticky=NSEW)
+
+tree.configure(style="Treeview")
 
 conn = get_connection()
 refresh_books_list()
