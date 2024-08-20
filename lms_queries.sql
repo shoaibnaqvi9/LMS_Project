@@ -1,4 +1,7 @@
+create database library
+
 use library;
+
 CREATE TABLE Categories (
     CategoryID INT PRIMARY KEY IDENTITY(1,1),
     CategoryName VARCHAR(100)
@@ -18,28 +21,23 @@ CREATE TABLE Authors (
     FirstName VARCHAR(100),
     LastName VARCHAR(100)
 );
-CREATE TABLE BookAuthors (
-    BookID INT,
-    AuthorID INT,
-    PRIMARY KEY (BookID, AuthorID),
-    FOREIGN KEY (BookID) REFERENCES Books(BookID),
-    FOREIGN KEY (AuthorID) REFERENCES Authors(AuthorID)
-);
-CREATE TABLE Members (
-    MemberID INT PRIMARY KEY IDENTITY(1,1),
-    FirstName VARCHAR(100),
-    LastName VARCHAR(100),
-    Email VARCHAR(255),
-    Phone VARCHAR(20),
-    Address VARCHAR(255),
-    MembershipDate DATE
+CREATE TABLE Users (
+    U_ID INT PRIMARY KEY IDENTITY(1,1),
+    U_FirstName VARCHAR(100),
+    U_LastName VARCHAR(100),
+    U_Email VARCHAR(255),
+    U_Phone VARCHAR(20),
+    U_address VARCHAR(255),
+    UserAdmissionDate DATE
 );
 CREATE TABLE Librarians (
     LibrarianID INT PRIMARY KEY IDENTITY(1,1),
     FirstName VARCHAR(100),
     LastName VARCHAR(100),
     Email VARCHAR(255),
-    Phone VARCHAR(20)
+    Phone VARCHAR(20),
+    Password VARCHAR(100),
+    LibrariansAdmissionDate DATETIME
 );
 CREATE TABLE Reservations (
     ReservationID INT PRIMARY KEY IDENTITY(1,1),
@@ -50,22 +48,14 @@ CREATE TABLE Reservations (
     FOREIGN KEY (BookID) REFERENCES Books(BookID),
     FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
 );
-CREATE TABLE Fines (
-    FineID INT PRIMARY KEY IDENTITY(1,1),
-    ReservationID INT,
-    Amount DECIMAL(10, 2),
-    PaymentDate DATE,
-    FOREIGN KEY (ReservationID) REFERENCES Reservations(ReservationID)
-);
 insert into Categories values('Fiction'),
 ('Non-Fiction'),('Science Fiction'),('Fantasy'),('Mystery'),('Thriller'),('Romance'),
 ('Historical'),('Biography'),('Self-Help'),('Health'),('Travel'),('Children’s'),('Young Adult'),
 ('Poetry'),('Drama'),('Horror'),('Science'),('Technology'),('Business');
 select * from Categories;
 select * from Books;
+select * from Librarians;
 select * from Authors;
-select * from BookAuthors;
-select * from Fines;
-select * from Members;
 select * from Reservations;
 select * from Members;
+
