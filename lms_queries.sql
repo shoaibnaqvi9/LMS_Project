@@ -1,7 +1,5 @@
-create database library
-
+create database library;
 use library;
-
 CREATE TABLE Categories (
     CategoryID INT PRIMARY KEY IDENTITY(1,1),
     CategoryName VARCHAR(100)
@@ -16,20 +14,6 @@ CREATE TABLE Books (
     Quantity INT,
     FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
 );
-CREATE TABLE Authors (
-    AuthorID INT PRIMARY KEY IDENTITY(1,1),
-    FirstName VARCHAR(100),
-    LastName VARCHAR(100)
-);
-CREATE TABLE Users (
-    U_ID INT PRIMARY KEY IDENTITY(1,1),
-    U_FirstName VARCHAR(100),
-    U_LastName VARCHAR(100),
-    U_Email VARCHAR(255),
-    U_Phone VARCHAR(20),
-    U_address VARCHAR(255),
-    UserAdmissionDate DATE
-);
 CREATE TABLE Librarians (
     LibrarianID INT PRIMARY KEY IDENTITY(1,1),
     FirstName VARCHAR(100),
@@ -39,23 +23,30 @@ CREATE TABLE Librarians (
     Password VARCHAR(100),
     LibrariansAdmissionDate DATETIME
 );
-CREATE TABLE Reservations (
-    ReservationID INT PRIMARY KEY IDENTITY(1,1),
-    BookID INT,
-    MemberID INT,
-    ReservationDate DATE,
-    Status VARCHAR(20),
-    FOREIGN KEY (BookID) REFERENCES Books(BookID),
-    FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
+CREATE TABLE Students (
+    S_ID INT PRIMARY KEY IDENTITY(1,1),
+    S_FirstName VARCHAR(100),
+    S_LastName VARCHAR(100),
+    S_Email VARCHAR(255),
+    S_Phone VARCHAR(20),
+    S_address VARCHAR(255),
+    S_AdmissionDate DATE
 );
-insert into Categories values('Fiction'),
-('Non-Fiction'),('Science Fiction'),('Fantasy'),('Mystery'),('Thriller'),('Romance'),
-('Historical'),('Biography'),('Self-Help'),('Health'),('Travel'),('Children’s'),('Young Adult'),
-('Poetry'),('Drama'),('Horror'),('Science'),('Technology'),('Business');
+CREATE TABLE Reservations (
+    R_ID INT PRIMARY KEY IDENTITY(1,1),
+    BookID INT,
+    S_ID INT,
+    ReservationDate DATETIME,
+    R_Status VARCHAR(20),
+    FOREIGN KEY (BookID) REFERENCES Books(BookID),
+    FOREIGN KEY (S_ID) REFERENCES Students(S_ID)
+);
+insert into Categories values('Fiction'),('Non-Fiction'),('Science Fiction'),('Fantasy'),('Mystery'),('Thriller'),('Romance'),
+('Historical'),('Biography'),('Self-Help'),('Health'),('Travel'),('Children'),('Poetry'),('Drama'),('Horror'),('Science'),
+('Technology'),('Business');
+
 select * from Categories;
 select * from Books;
 select * from Librarians;
-select * from Authors;
+select * from Students;
 select * from Reservations;
-select * from Members;
-

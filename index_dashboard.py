@@ -1,8 +1,7 @@
 from tkinter import *
 from tkinter import messagebox, ttk
 import pypyodbc as odbc
-import admin_signup
-
+from datetime import datetime
 def get_connection():
     DRIVER_NAME = "SQL SERVER"
     SERVER_NAME = "DESKTOP-OFOE4B8\SQLEXPRESS"
@@ -57,7 +56,6 @@ def update_book(conn, book_id, title=None, isbn=None, publish=None, publish_year
         query += " Quantity = ?,"
         params.append(quantity)
 
-    # Remove trailing comma
     query = query.rstrip(',')
     query += " WHERE BookID = ?"
     params.append(book_id)
@@ -78,37 +76,88 @@ def delete_book(conn, book_id):
 def add_book_gui():
     add_window = Toplevel(root)
     add_window.title("Add Book")
+    add_window.configure(bg="#2c3e50")
+    
+    label_font = ("Arial", 12)
+    entry_bg = "#ecf0f1"
+    entry_fg = "#2c3e50"
+    button_bg = "#3498db"
+    button_fg = "white"
+    button_font = ("Arial", 10, "bold")
 
-    Label(add_window, text="Title", fg="white", bg="black").grid(row=0)
-    Label(add_window, text="ISBN").grid(row=1)
-    Label(add_window, text="Publisher").grid(row=2)
-    Label(add_window, text="PublicationYear").grid(row=3)
-    Label(add_window, text="CategoryID").grid(row=4)
-    Label(add_window, text="Quantity").grid(row=5)
+    Label(add_window, text="Title", fg="white", bg="#2c3e50", font=label_font).grid(row=0, column=0, padx=10, pady=5, sticky=W)
+    Label(add_window, text="ISBN", fg="white", bg="#2c3e50", font=label_font).grid(row=1, column=0, padx=10, pady=5, sticky=W)
+    Label(add_window, text="Publisher", fg="white", bg="#2c3e50", font=label_font).grid(row=2, column=0, padx=10, pady=5, sticky=W)
+    Label(add_window, text="Publication Year", fg="white", bg="#2c3e50", font=label_font).grid(row=3, column=0, padx=10, pady=5, sticky=W)
+    Label(add_window, text="Category", fg="white", bg="#2c3e50", font=label_font).grid(row=4, column=0, padx=10, pady=5, sticky=W)
+    Label(add_window, text="Quantity", fg="white", bg="#2c3e50", font=label_font).grid(row=5, column=0, padx=10, pady=5, sticky=W)
 
-    title = Entry(add_window)
-    isbn = Entry(add_window)
-    publish = Entry(add_window)
-    publish_year = Entry(add_window)
-    category_ID = Entry(add_window)
-    quantity = Entry(add_window)
+    title_entry = Entry(add_window, bg=entry_bg, fg=entry_fg, width=30)
+    isbn_entry = Entry(add_window, bg=entry_bg, fg=entry_fg, width=30)
+    publisher_entry = Entry(add_window, bg=entry_bg, fg=entry_fg, width=30)
+    pub_year_entry = Entry(add_window, bg=entry_bg, fg=entry_fg, width=30)
+    quantity_entry = Entry(add_window, bg=entry_bg, fg=entry_fg, width=30)
 
-    title.grid(row=0, column=1)
-    isbn.grid(row=1, column=1)
-    publish.grid(row=2, column=1)
-    publish_year.grid(row=3, column=1)
-    category_ID.grid(row=4, column=1)
-    quantity.grid(row=5, column=1)
+    title_entry.grid(row=0, column=1, padx=10, pady=5)
+    isbn_entry.grid(row=1, column=1, padx=10, pady=5)
+    publisher_entry.grid(row=2, column=1, padx=10, pady=5)
+    pub_year_entry.grid(row=3, column=1, padx=10, pady=5)
+    quantity_entry.grid(row=5, column=1, padx=10, pady=5)
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT CategoryID, CategoryName FROM Categories")
+    categories = cursor.fetchall()
+    cursor.close()
+
+    category_dict = {cat[1]: cat[0] for cat in categories}
+
+    category_names = list(category_dict.keys())
+
+    category_combobox = ttk.Combobox(add_window, values=category_names, state="readonly")
+    category_combobox.grid(row=4, column=1)
+    category_combobox.set("Select Category")
 
     def add_book():
-        create_book(conn, title.get(), isbn.get(), publish.get(), publish_year.get(), category_ID.get(), quantity.get())
-        refresh_books_list()
+        title = title_entry.get().strip()
+        isbn = isbn_entry.get().strip()
+        publisher = publisher_entry.get().strip()
+        publication_year = pub_year_entry.get().strip()
+        quantity = quantity_entry.get().strip()
+        selected_category = category_combobox.get()
 
-    Button(add_window, text='Add', command=add_book).grid(row=6, column=1, sticky=W, pady=4)
+        if not title or not isbn or not publisher or not publication_year or not quantity or selected_category == "Select Category":
+            messagebox.showwarning("Input Error", "Please fill in all fields.")
+            return
+
+        if not publication_year.isdigit() or not quantity.isdigit():
+            messagebox.showwarning("Input Error", "Publication Year and Quantity must be numeric.")
+            return
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM Books WHERE ISBN = ?", (isbn,))
+            result = cursor.fetchone()
+            if result[0] > 0:
+                messagebox.showerror("Duplicate ISBN", "The ISBN you entered already exists in the database.")
+                cursor.close()
+                return
+            cursor.close()
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Failed to check ISBN uniqueness:\n{e}")
+            return
+        try:
+            category_id = category_dict[selected_category]
+            create_book(conn, title, isbn, publisher, int(publication_year), category_id, int(quantity))
+            refresh_books_list()
+            messagebox.showinfo("Success", "Book added successfully.")
+            add_window.destroy()
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Failed to add book:\n{e}")
+
+    Button(add_window, text='Add Book', width=15, command=add_book).grid(row=6, column=0, columnspan=2, pady=15)
     def add_back():
         add_window.destroy()
-    Button(add_window, text='Back', command=add_back).grid(row=1, column=2, sticky=W, pady=3)
-def exit():
+    Button(add_window, text='Back', command=add_back).grid(row=6, column=2, sticky=W, pady=4)
+def exit_program():
     root.destroy()
     
 def refresh_books_list():
@@ -121,95 +170,147 @@ def refresh_books_list():
 def update_book_gui():
     update_window = Toplevel(root)
     update_window.title("Update Book")
+    update_window.configure(bg="#2c3e50")
+      
+    label_font = ("Arial", 12)
+    entry_bg = "#ecf0f1"
+    entry_fg = "#2c3e50"
+    button_bg = "#3498db"
+    button_fg = "white"
+    button_font = ("Arial", 10, "bold")
+    
+    Label(update_window, text="Book ID", fg="white", bg="#2c3e50", font=label_font).grid(row=0, column=0, padx=10, pady=5, sticky=W)
+    Label(update_window, text="Title", fg="white", bg="#2c3e50", font=label_font).grid(row=1, column=0, padx=10, pady=5, sticky=W)
+    Label(update_window, text="ISBN", fg="white", bg="#2c3e50", font=label_font).grid(row=2, column=0, padx=10, pady=5, sticky=W)
+    Label(update_window, text="Publisher", fg="white", bg="#2c3e50", font=label_font).grid(row=3, column=0, padx=10, pady=5, sticky=W)
+    Label(update_window, text="Publication Year", fg="white", bg="#2c3e50", font=label_font).grid(row=4, column=0, padx=10, pady=5, sticky=W)
+    Label(update_window, text="Category", fg="white", bg="#2c3e50", font=label_font).grid(row=5, column=0, padx=10, pady=5, sticky=W)
+    Label(update_window, text="Quantity", fg="white", bg="#2c3e50", font=label_font).grid(row=6, column=0, padx=10, pady=5, sticky=W)
 
-    Label(update_window, text="Book ID").grid(row=0)
-    Label(update_window, text="Title").grid(row=1)
-    Label(update_window, text="ISBN").grid(row=2)
-    Label(update_window, text="Publisher").grid(row=3)
-    Label(update_window, text="Publication Year").grid(row=4)
-    Label(update_window, text="Category ID").grid(row=5)
-    Label(update_window, text="Quantity").grid(row=6)
+    book_id_entry = Entry(update_window, bg=entry_bg, fg=entry_fg, width=30)
+    title_entry = Entry(update_window, bg=entry_bg, fg=entry_fg, width=30)
+    isbn_entry = Entry(update_window, bg=entry_bg, fg=entry_fg, width=30)
+    publisher_entry = Entry(update_window, bg=entry_bg, fg=entry_fg, width=30)
+    pub_year_entry = Entry(update_window, bg=entry_bg, fg=entry_fg, width=30)
+    quantity_entry = Entry(update_window, bg=entry_bg, fg=entry_fg, width=30)
 
-    book_id = Entry(update_window)
-    title = Entry(update_window)
-    isbn = Entry(update_window)
-    publish = Entry(update_window)
-    publish_year = Entry(update_window)
-    category_ID = Entry(update_window)
-    quantity = Entry(update_window)
+    book_id_entry.grid(row=0, column=1, padx=10, pady=5)
+    title_entry.grid(row=1, column=1, padx=10, pady=5)
+    isbn_entry.grid(row=2, column=1, padx=10, pady=5)
+    publisher_entry.grid(row=3, column=1, padx=10, pady=5)
+    pub_year_entry.grid(row=4, column=1, padx=10, pady=5)
+    quantity_entry.grid(row=6, column=1, padx=10, pady=5)
 
-    book_id.grid(row=0, column=1)
-    title.grid(row=1, column=1)
-    isbn.grid(row=2, column=1)
-    publish.grid(row=3, column=1)
-    publish_year.grid(row=4, column=1)
-    category_ID.grid(row=5, column=1)
-    quantity.grid(row=6, column=1)
+    cursor = conn.cursor()
+    cursor.execute("SELECT CategoryID, CategoryName FROM Categories")
+    categories = cursor.fetchall()
+    cursor.close()
 
-    def update_book_details():
-        update_book(conn, book_id.get(), title.get(), isbn.get(), publish.get(), publish_year.get(), category_ID.get(), quantity.get())
-        refresh_books_list()
+    category_dict = {cat[1]: cat[0] for cat in categories}
+    category_names = list(category_dict.keys())
 
-    Button(update_window, text='Update', command=update_book_details).grid(row=7, column=1, sticky=W, pady=4)
-    def upd_back():
-        update_window.destroy()
-    Button(update_window, text='Back', command=upd_back).grid(row=1, column=2, sticky=W, pady=3)
+    category_combobox = ttk.Combobox(update_window, values=category_names, state="readonly")
+    category_combobox.grid(row=5, column=1)
+    category_combobox.set("Select Category")
 
+    def update_book_data():
+        book_id = book_id_entry.get().strip()
+        title = title_entry.get().strip()
+        isbn = isbn_entry.get().strip()
+        publisher = publisher_entry.get().strip()
+        publication_year = pub_year_entry.get().strip()
+        quantity = quantity_entry.get().strip()
+        selected_category = category_combobox.get()
+
+        if not book_id or selected_category == "Select Category":
+            messagebox.showwarning("Input Error", "Please fill in all mandatory fields.")
+            return
+
+        if not book_id.isdigit() or (publication_year and not publication_year.isdigit()) or (quantity and not quantity.isdigit()):
+            messagebox.showwarning("Input Error", "Book ID, Publication Year, and Quantity must be numeric.")
+            return
+
+        try:
+            category_id = category_dict[selected_category]
+            update_book(conn, int(book_id), title, isbn, publisher, int(publication_year) if publication_year else None, category_id, int(quantity) if quantity else None)
+            refresh_books_list()
+            messagebox.showinfo("Success", "Book updated successfully.")
+            update_window.destroy()
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Failed to update book:\n{e}")
+
+    Button(update_window, text='Update Book', width=15, command=update_book_data, bg=button_bg, fg=button_fg, font=button_font).grid(row=7, column=0, columnspan=2, pady=15)
+    Button(update_window, text='Back', command=update_window.destroy, bg=button_bg, fg=button_fg, font=button_font).grid(row=7, column=2, sticky=W, pady=4)
 
 def delete_book_gui():
     delete_window = Toplevel(root)
     delete_window.title("Delete Book")
-
-    Label(delete_window, text="Book ID").grid(row=0)
-
-    book_id = Entry(delete_window)
-    book_id.grid(row=0, column=1)
-
-    def delete_book_details():
-        delete_book(conn, book_id.get())
-        refresh_books_list()
-
-    Button(delete_window, text='Delete', command=delete_book_details).grid(row=1, column=1, sticky=W, pady=4)
-    def del_back():
-        delete_window.destroy()
-    Button(delete_window, text='Back', command=del_back).grid(row=1, column=2, sticky=W, pady=3)
-
-if __name__ == '__main__':
+    delete_window.configure(bg="#2c3e50")  # Set background color
     
+    label_font = ("Arial", 12)
+    entry_bg = "#ecf0f1"
+    entry_fg = "#2c3e50"
+    button_bg = "#3498db"
+    button_fg = "white"
+    button_font = ("Arial", 10, "bold")
+
+    Label(delete_window, text="Book ID", fg="white", bg="#2c3e50", font=label_font).grid(row=0, column=0, padx=10, pady=5, sticky=W)
+
+    book_id_entry = Entry(delete_window, bg=entry_bg, fg=entry_fg, width=30)
+    book_id_entry.grid(row=0, column=1, padx=10, pady=5)
+
+    def delete_book_data():
+        book_id = book_id_entry.get().strip()
+
+        if not book_id:
+            messagebox.showwarning("Input Error", "Please enter a Book ID.")
+            return
+
+        if not book_id.isdigit():
+            messagebox.showwarning("Input Error", "Book ID must be numeric.")
+            return
+
+        try:
+            delete_book(conn, int(book_id))
+            refresh_books_list()
+            delete_window.destroy()
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Failed to delete book:\n{e}")
+
+    Button(delete_window, text='Delete Book', width=15, command=delete_book_data, bg=button_bg, fg=button_fg, font=button_font).grid(row=1, column=0, columnspan=2, pady=15)
+    Button(delete_window, text='Back', command=delete_window.destroy, bg=button_bg, fg=button_fg, font=button_font).grid(row=1, column=2, sticky=W, pady=4)
+
+def start_dashboard():
+    global root, conn, tree
     root = Tk()
-    root.geometry("1200x600")
-    root.title("Library Management System")
-    root.columnconfigure(1, weight=1)
-    root.rowconfigure(3, weight=1)
-    Button(root, text='Add Book', fg='white', bg='black', width='10', command=add_book_gui).grid(row=3, column=0, sticky=W, pady=2)
-    Button(root, text='Update Book', fg='white', bg='black', width='10', command=update_book_gui).grid(row=3, column=1, sticky=W, pady=2)
-    Button(root, text='Delete Book', fg='white', bg='black', width='10', command=delete_book_gui).grid(row=3, column=2, sticky=W, pady=2)
-    Button(root, text='Exit', fg='white', bg='black', width='10', command=exit).grid(row=3, column=3, sticky=W, pady=2)
+    root.title("Library Management Dashboard")
+    root.configure(bg="#34495e")
+
     style = ttk.Style()
-    style.configure("Treeview.Heading", foreground="black")
+    style.configure("Treeview", background="#34495e", fieldbackground="#34495e", foreground="white")
 
-    tree = ttk.Treeview(root, columns=('BookID', 'Title', 'ISBN', 'Publisher', 'PublicationYear', 'CategoryID', 'Quantity'), show='headings')
-    tree.heading('BookID', text='BookID')
-    tree.heading('Title', text='Title')
-    tree.heading('ISBN', text='ISBN')
-    tree.heading('Publisher', text='Publisher')
-    tree.heading('PublicationYear', text='PublicationYear')
-    tree.heading('CategoryID', text='CategoryID')
-    tree.heading('Quantity', text='Quantity')
+    main_label_font = ("Arial", 16, "bold")
+    button_bg = "#e74c3c"
+    button_fg = "white"
+    button_font = ("Arial", 12, "bold")
 
-    tree.column('BookID', width=100)
-    tree.column('Title', width=200)
-    tree.column('ISBN', width=150)
-    tree.column('Publisher', width=150)
-    tree.column('PublicationYear', width=100)
-    tree.column('CategoryID', width=100)
-    tree.column('Quantity', width=80)
+    Label(root, text="Library Management System", fg="white", bg="#34495e", font=main_label_font).pack(pady=10)
 
-    tree.grid(row=0, column=1, rowspan=3, sticky=NSEW)
+    Button(root, text='Add Book', command=add_book_gui, bg=button_bg, fg=button_fg, font=button_font).pack(pady=5)
+    Button(root, text='Update Book', command=update_book_gui, bg=button_bg, fg=button_fg, font=button_font).pack(pady=5)
+    Button(root, text='Delete Book', command=delete_book_gui, bg=button_bg, fg=button_fg, font=button_font).pack(pady=5)
+    Button(root, text='Exit', command=exit_program, bg=button_bg, fg=button_fg, font=button_font).pack(pady=5)
 
-    tree.configure(style="Treeview")
+    tree = ttk.Treeview(root, columns=("BookID", "Title", "ISBN", "Publisher", "PublicationYear", "CategoryID", "Quantity"), show="headings")
+    tree.heading("BookID", text="BookID")
+    tree.heading("Title", text="Title")
+    tree.heading("ISBN", text="ISBN")
+    tree.heading("Publisher", text="Publisher")
+    tree.heading("PublicationYear", text="PublicationYear")
+    tree.heading("CategoryID", text="CategoryID")
+    tree.heading("Quantity", text="Quantity")
+    tree.pack(pady=20)
 
     conn = get_connection()
     refresh_books_list()
-
     root.mainloop()
