@@ -156,4 +156,5 @@ def admin_signup():
         root.mainloop()
     except Exception as e:
         messagebox.showerror("Error", f"An unexpected error occurred during initialization: {str(e)}")
+
 admin_login()
